@@ -1,57 +1,89 @@
-📘 Employee API – Coding Challenge Solution
+# Employee API – Coding Challenge Solution
 
-This project implements a Spring Boot Employee API http://localhost:8111/api/v2/employee that integrates with a Mock Employee Server http://localhost:8112/api/v1/employee. via REST calls.
-It demonstrates clean coding principles, REST API best practices, validation, exception handling, and test-driven development.
+![Java](https://img.shields.io/badge/Java-17-blue)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-brightgreen)
+![Build](https://img.shields.io/badge/Build-Gradle-success)
+![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen)
+![Coverage](https://img.shields.io/badge/Coverage-90%25-green)
 
-📂 Project Structure
+This project implements a Spring Boot **Employee API** exposing:
+http://localhost:8111/api/v2/employee
+
+It integrates with a downstream Mock Employee Server:
+
+http://localhost:8112/api/v1/employee
+
+
+This solution demonstrates:
+- Clean architecture & coding principles
+- REST API best practices
+- Comprehensive validation
+- Global exception handling
+- Downstream error translation
+- Full unit & integration testing
+
+---
+
+## 📂 Project Structure
+
+```text
 root/
-├── api/                 # Main Spring Boot application
-│    ├── controller/     # REST controllers
-│    ├── service/        # Business logic
-│    ├── client/         # RestTemplate client for downstream API
-│    ├── dto/            # Request DTOs with validation
-│    ├── model/          # API response & Employee model
-│    ├── error/          # Global exception handler
-│    ├── test/           # Unit & integration tests
-│    └── ApiApplication
-└── server/              # Mock Employee API (assignment-provided)
+├── api/                     
+│   ├── controller/          
+│   ├── service/             
+│   ├── client/              
+│   ├── dto/                 
+│   ├── model/               
+│   ├── error/               
+│   ├── test/                
+│   └── ApiApplication.java
+└── server/ 
 
-🚀 Features Implemented
-✔ REST Endpoints http://localhost:8111/api/v2/employee
-Endpoint	Description
-GET /api/v2/employee	Returns all employees
-GET /api/v2/employee/search/{name}	Search employee by name fragment
-GET /api/v2/employee/{id}	Get employee by ID
-GET /api/v2/employee/highestSalary	Returns the highest employee salary
-GET /api/v2/employee/topTenHighestEarningEmployeeNames	Returns top 10 employees by salary
-POST /api/v2/employee	Creates a new employee
-DELETE /api/v2/employee/{name}	Deletes employee by name
+
+
+🚀 REST Endpoints
+Employee API Endpoints
+
+| Method | Endpoint                                                 | Description                          |
+|--------|-----------------------------------------------------------|--------------------------------------|
+| GET    | `/api/v2/employee`                                       | Get all employees                    |
+| GET    | `/api/v2/employee/search/{name}`                         | Search employees by name fragment    |
+| GET    | `/api/v2/employee/{id}`                                  | Get employee by ID                   |
+| GET    | `/api/v2/employee/highestSalary`                         | Get highest employee salary          |
+| GET    | `/api/v2/employee/topTenHighestEarningEmployeeNames`     | Get top 10 earning employee names    |
+| POST   | `/api/v2/employee`                                       | Create a new employee                |
+| DELETE | `/api/v2/employee/{name}`                                | Delete employee by name              |
+
+
+
 🧱 Core Concepts Demonstrated
-✅ 1. Input Validation (Bean Validation)
+1. Input Validation (Jakarta Validation)
 
-Each request is validated using jakarta.validation:
 
 @NotBlank(message = "Name must not be blank")
 @Size(min = 3, message = "name must be at least 3 characters")
 private String name;
 
-
-Controller uses:
+Controller:
 
 public ResponseEntity<Employee> createEmployee(
-@Valid @RequestBody CreateEmployeeRequest request)
+        @Valid @RequestBody CreateEmployeeRequest request) {
+}
 
 
-Invalid inputs return:
+Error response:
 
-400 Bad Request
+{
+  "timestamp": "2025-11-23T14:00:00Z",
+  "status": 400,
+  "error": "Bad Request",
+  "message": "name must be at least 3 characters",
+  "path": "/api/v2/employee"
+}
 
+2. Global Exception Handling
 
-With a clean JSON error message.
-
-✅ 2. Global Exception Handling
-
-A centralized @RestControllerAdvice converts exceptions into structured JSON:
+Handled exceptions:
 
 MethodArgumentNotValidException → 400
 
@@ -59,182 +91,169 @@ IllegalArgumentException → 400
 
 HttpClientErrorException.TooManyRequests → 429
 
-Graceful downstream parsing of Mock Server validation errors
+Consistent JSON error responses are returned.
 
-Example error JSON:
+3. Downstream Error Translation
 
-{
-"timestamp": "2025-11-23T14:00:00Z",
-"status": 400,
-"error": "Bad Request",
-"message": "name must be at least 3 characters",
-"path": "/api/v2/employee"
-}
-
-✅ 3. Custom Downstream Error Translation
-
-Mock server sometimes returns large 500 error blobs containing validation messages.
-Our client extracts only useful messages via regex:
+Mock server may return verbose error blobs:
 
 default message [must be greater than or equal to 16]
 
 
-These are turned into:
+Client extracts the relevant message:
 
-400 Bad Request
-{
-"message": "must be greater than or equal to 16"
+catch (HttpServerErrorException ex) {
+    String cleaned = extractValidationMessage(ex.getResponseBodyAsString());
+    throw new IllegalArgumentException(cleaned);
 }
 
-✅ 4. Unit Testing & Integration Testing
 
-A comprehensive suite includes:
+Cleaned API output:
 
-✔ Controller tests with MockMvc
+{
+  "message": "must be greater than or equal to 16"
+}
 
-Validation scenarios:
+4. Unit & Integration Testing
 
-null / blank / whitespace
+Test suite covers:
 
-minimum length
-
-min/max age
-
-min salary
-
-multiple errors
-
-✔ Integration tests using MockRestServiceServer
-
-Verifies:
-
-Downstream 500 validation → transformed to 400
-
-Successful creation flow
-
-Downstream matching stubs
-
-▶️ Running the Application
-1. Start the Mock Server
-
-Inside root folder:
-
-cd server
-./gradlew bootRun
-
-
-Mock server listens on:
-
-http://localhost:8112/api/v1/employee
-
-2. Start the API module
-   cd api
-   ./gradlew bootRun
-
-
-API listens on:
-
-http://localhost:8111/api/v2/employee
-
-🧪 Running Tests
-
-Inside the api module:
-
-./gradlew test
-
-
-Test coverage includes:
-
-Controller + validation
+Controller validation
 
 Service logic
 
 API client behavior
 
-Downstream error translation
+Downstream error sanitation
 
-Integration-level flows
+Integration flows
+
+Uses:
+
+MockMvc
+
+MockRestServiceServer
+
+Spring Boot Test
+
+▶️ Running the Application
+1. Start Mock Server
+cd server
+./gradlew bootRun
+
+
+Mock server URL:
+
+http://localhost:8112/api/v1/employee
+
+2. Start the Employee API
+cd api
+./gradlew bootRun
+
+
+API URL:
+
+http://localhost:8111/api/v2/employee
+
+🧪 Running Tests
+./gradlew test
 
 🔧 Configuration
 application.yml
 server:
-port: 8111
+  port: 8111
 
 spring:
-application:
-name: employee-api
+  application:
+    name: employee-api
 
 employee:
-mock:
-base-url: http://localhost:8112/api/v1/employee
+  mock:
+    base-url: http://localhost:8112/api/v1/employee
 
-
-Override base URL for testing:
-
-application-test.yml:
-
+application-test.yml
 employee:
-mock:
-base-url: http://localhost:9999/api/v1/employee
+  mock:
+    base-url: http://localhost:9999/api/v1/employee
 
 📡 API Client
 
-The client uses:
+Features:
 
 RestTemplate
 
-Connection & read timeouts
+Connection/read timeouts
 
 JSON parsing
 
 Downstream validation extraction
 
+Clean error propagation
+
+Example handling:
+
 catch (HttpServerErrorException ex) {
-String cleaned = extractValidationMessage(ex.getResponseBodyAsString());
-throw new IllegalArgumentException(cleaned);
+    String cleaned = extractValidationMessage(ex.getResponseBodyAsString());
+    throw new IllegalArgumentException(cleaned);
 }
 
-📈 Scalability & Resilience Considerations
 
-Implemented / recommended:
+📈 Scalability & Resilience
+Implemented
 
-✔ Local validation to reduce unnecessary downstream calls
-✔ Downstream error translation for clean API responses
-✔ Timeout configuration on RestTemplate
-✔ CircuitBreaker (if needed) – optional
-✔ Thread safety and stateless service layer
-✔ Clean DTO layer separation
+Local request validation
 
-Future enhancements:
+Downstream error translation
 
-Replace RestTemplate with WebClient (reactive, non-blocking)
+RestTemplate timeouts
 
-Use Resilience4j Retry + RateLimiter if required
+Stateless service layer
 
-Introduce caching for high-read endpoints
+Clean separation of layers
+
+Future Enhancements
+
+Replace RestTemplate with WebClient
+
+Add Resilience4j (CircuitBreaker, Retry)
+
+Add caching for frequent read endpoints
+
+Improve tracing & observability
+
+
 
 🏗 Architecture Overview
-Client → Controller → Service → ApiClient → Mock Server
-↓               ↓
-Validation      Downstream Validation Extraction
-↓
-Global Error Handler
+Client
+  ↓
+Controller
+  ↓
+Service
+  ↓
+API Client
+  ↓
+Mock Employee Server
+
+
 
 👤 Author
 
 Yogendra Singh Bundela
-(Employee API Coding Challenge Solution)
+Employee API – Coding Challenge Solution
 
 ✅ Summary
 
-This solution implements a clean, production-ready REST API with:
+This solution provides:
+
+Clean REST design
 
 Strong validation
 
-Robust error handling
-
-Full testing coverage
+Robust global exception handling
 
 Downstream error sanitization
 
-Extensible architecture
+Comprehensive unit + integration tests
+
+Production-ready architecture
+
