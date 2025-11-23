@@ -1,0 +1,29 @@
+spring.application.name: employee-api
+server.port: 8111
+employee:
+  mock:
+    base-url: http://localhost:8112/api/v1/employee
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: ALWAYS
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      employeeApi:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 3
+        minimumNumberOfCalls: 5
+  retry:
+    instances:
+      employeeApi:
+        maxAttempts: 3
+        waitDuration: 200ms

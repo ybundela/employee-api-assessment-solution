@@ -1,118 +1,240 @@
-# Coding Challenge
+📘 Employee API – Coding Challenge Solution
 
-### In this assessment you will be tasked with filling out the functionality of different methods that will be listed further down.
-These methods will require some level of api interactions with the following base url: https://dummy.restapiexample.com.
-Please keep the following in mind when doing this assessment: clean coding practices, test driven development, logging, and scalability.
-If you are unable to successfully receive responses from the endpoints, mocking the response calls may prove to be helpful.
+This project implements a Spring Boot Employee API http://localhost:8111/api/v2/employee that integrates with a Mock Employee Server http://localhost:8112/api/v1/employee. via REST calls.
+It demonstrates clean coding principles, REST API best practices, validation, exception handling, and test-driven development.
 
-### Endpoints to implement
+📂 Project Structure
+root/
+├── api/                 # Main Spring Boot application
+│    ├── controller/     # REST controllers
+│    ├── service/        # Business logic
+│    ├── client/         # RestTemplate client for downstream API
+│    ├── dto/            # Request DTOs with validation
+│    ├── model/          # API response & Employee model
+│    ├── error/          # Global exception handler
+│    ├── test/           # Unit & integration tests
+│    └── ApiApplication
+└── server/              # Mock Employee API (assignment-provided)
 
-getAllEmployees()
+🚀 Features Implemented
+✔ REST Endpoints http://localhost:8111/api/v2/employee
+Endpoint	Description
+GET /api/v2/employee	Returns all employees
+GET /api/v2/employee/search/{name}	Search employee by name fragment
+GET /api/v2/employee/{id}	Get employee by ID
+GET /api/v2/employee/highestSalary	Returns the highest employee salary
+GET /api/v2/employee/topTenHighestEarningEmployeeNames	Returns top 10 employees by salary
+POST /api/v2/employee	Creates a new employee
+DELETE /api/v2/employee/{name}	Deletes employee by name
+🧱 Core Concepts Demonstrated
+✅ 1. Input Validation (Bean Validation)
 
-    output - list of employees
-    description - this should return all employees
+Each request is validated using jakarta.validation:
 
-getEmployeesByNameSearch()
+@NotBlank(message = "Name must not be blank")
+@Size(min = 3, message = "name must be at least 3 characters")
+private String name;
 
-    output - list of employees
-    description - this should return all employees whose name contains or matches the string input provided
 
-getEmployeeById(string id)
+Controller uses:
 
-    output - employee
-    description - this should return a single employee
+public ResponseEntity<Employee> createEmployee(
+@Valid @RequestBody CreateEmployeeRequest request)
 
-getHighestSalaryOfEmployees()
 
-    output - integer of the highest salary
-    description -  this should return a single integer indicating the highest salary of all employees
+Invalid inputs return:
 
-getTop10HighestEarningEmployeeNames()
+400 Bad Request
 
-    output - list of employees
-    description -  this should return a list of the top 10 employees based off of their salaries
 
-createEmployee(string name, string salary, string age)
+With a clean JSON error message.
 
-    output - string of the status (i.e. success)
-    description -  this should return a status of success or failed based on if an employee was created
+✅ 2. Global Exception Handling
 
-deleteEmployee(String id)
+A centralized @RestControllerAdvice converts exceptions into structured JSON:
 
-    output - the name of the employee that was deleted
-    description - this should delete the employee with specified id given
+MethodArgumentNotValidException → 400
 
-### External endpoints from base url
-#### This section will outline all available endpoints and their request and response models from https://dummy.restapiexample.com
-/employees
+IllegalArgumentException → 400
 
-    request:
-        method: GET
-        parameters: n/a
-        full route: https://dummy.restapiexample.com/api/v1/employees
-    response:
-        {
-            "status": "success",
-            "data": [
-                {
-                "id": "1",
-                "employee_name": "Tiger Nixon",
-                "employee_salary": "320800",
-                "employee_age": "61",
-                "profile_image": ""
-                },
-                ....
-            ]
-        }
+HttpClientErrorException.TooManyRequests → 429
 
-/employee/{id}
+Graceful downstream parsing of Mock Server validation errors
 
-    request:
-        method: GET
-        parameters: 
-            id (String)
-        full route: https://dummy.restapiexample.com/api/v1/employee/{id}
-    response: 
-        {
-            "status": "success",
-            "data": {
-                "id": "1",
-                "employee_name": "Foo Bar",
-                "employee_salary": "320800",
-                "employee_age": "61",
-                "profile_image": ""
-            }
-        }
+Example error JSON:
 
-/create
+{
+"timestamp": "2025-11-23T14:00:00Z",
+"status": 400,
+"error": "Bad Request",
+"message": "name must be at least 3 characters",
+"path": "/api/v2/employee"
+}
 
-    request:
-        method: POST
-        parameters: 
-            name (String),
-            salary (String),
-            age (String)
-        full route: https://dummy.restapiexample.com/api/v1/create
-    response:
-        {
-            "status": "success",
-            "data": {
-                "name": "test",
-                "salary": "123",
-                "age": "23",
-                "id": 25
-            }
-        }
+✅ 3. Custom Downstream Error Translation
 
-/delete/{id}
+Mock server sometimes returns large 500 error blobs containing validation messages.
+Our client extracts only useful messages via regex:
 
-    request:
-        method: DELETE
-        parameters:
-            id (String)
-        full route: https://dummy.restapiexample.com/api/v1/delete/{id}
-    response:
-        {
-            "status": "success",
-            "message": "successfully! deleted Record"
-        }
+default message [must be greater than or equal to 16]
+
+
+These are turned into:
+
+400 Bad Request
+{
+"message": "must be greater than or equal to 16"
+}
+
+✅ 4. Unit Testing & Integration Testing
+
+A comprehensive suite includes:
+
+✔ Controller tests with MockMvc
+
+Validation scenarios:
+
+null / blank / whitespace
+
+minimum length
+
+min/max age
+
+min salary
+
+multiple errors
+
+✔ Integration tests using MockRestServiceServer
+
+Verifies:
+
+Downstream 500 validation → transformed to 400
+
+Successful creation flow
+
+Downstream matching stubs
+
+▶️ Running the Application
+1. Start the Mock Server
+
+Inside root folder:
+
+cd server
+./gradlew bootRun
+
+
+Mock server listens on:
+
+http://localhost:8112/api/v1/employee
+
+2. Start the API module
+   cd api
+   ./gradlew bootRun
+
+
+API listens on:
+
+http://localhost:8111/api/v2/employee
+
+🧪 Running Tests
+
+Inside the api module:
+
+./gradlew test
+
+
+Test coverage includes:
+
+Controller + validation
+
+Service logic
+
+API client behavior
+
+Downstream error translation
+
+Integration-level flows
+
+🔧 Configuration
+application.yml
+server:
+port: 8111
+
+spring:
+application:
+name: employee-api
+
+employee:
+mock:
+base-url: http://localhost:8112/api/v1/employee
+
+
+Override base URL for testing:
+
+application-test.yml:
+
+employee:
+mock:
+base-url: http://localhost:9999/api/v1/employee
+
+📡 API Client
+
+The client uses:
+
+RestTemplate
+
+Connection & read timeouts
+
+JSON parsing
+
+Downstream validation extraction
+
+catch (HttpServerErrorException ex) {
+String cleaned = extractValidationMessage(ex.getResponseBodyAsString());
+throw new IllegalArgumentException(cleaned);
+}
+
+📈 Scalability & Resilience Considerations
+
+Implemented / recommended:
+
+✔ Local validation to reduce unnecessary downstream calls
+✔ Downstream error translation for clean API responses
+✔ Timeout configuration on RestTemplate
+✔ CircuitBreaker (if needed) – optional
+✔ Thread safety and stateless service layer
+✔ Clean DTO layer separation
+
+Future enhancements:
+
+Replace RestTemplate with WebClient (reactive, non-blocking)
+
+Use Resilience4j Retry + RateLimiter if required
+
+Introduce caching for high-read endpoints
+
+🏗 Architecture Overview
+Client → Controller → Service → ApiClient → Mock Server
+↓               ↓
+Validation      Downstream Validation Extraction
+↓
+Global Error Handler
+
+👤 Author
+
+Yogendra Singh Bundela
+(Employee API Coding Challenge Solution)
+
+✅ Summary
+
+This solution implements a clean, production-ready REST API with:
+
+Strong validation
+
+Robust error handling
+
+Full testing coverage
+
+Downstream error sanitization
+
+Extensible architecture
