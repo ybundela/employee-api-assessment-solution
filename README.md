@@ -56,6 +56,8 @@ Employee API Endpoints
 
 
 
+
+
 🧱 Core Concepts Demonstrated
 1. Input Validation (Jakarta Validation)
 
@@ -114,27 +116,26 @@ Cleaned API output:
   "message": "must be greater than or equal to 16"
 }
 
+
+
 4. Unit & Integration Testing
 
 Test suite covers:
+1) Controller validation
+2) Service logic
+3) API client behavior
+4) Downstream error sanitation
+5) Integration flows
 
-Controller validation
 
-Service logic
 
-API client behavior
+5. Uses:
 
-Downstream error sanitation
+1) MockMvc
+2) MockRestServiceServer
 
-Integration flows
 
-Uses:
-
-MockMvc
-
-MockRestServiceServer
-
-Spring Boot Test
+6. Spring Boot Test
 
 ▶️ Running the Application
 1. Start Mock Server
@@ -142,24 +143,26 @@ cd server
 ./gradlew bootRun
 
 
-Mock server URL:
+7. Mock server URL:
 
 http://localhost:8112/api/v1/employee
 
-2. Start the Employee API
+8. Start the Employee API
 cd api
 ./gradlew bootRun
 
 
-API URL:
-
+9) API URL:
 http://localhost:8111/api/v2/employee
+
 
 🧪 Running Tests
 ./gradlew test
 
 🔧 Configuration
+
 application.yml
+
 server:
   port: 8111
 
@@ -176,18 +179,15 @@ employee:
   mock:
     base-url: http://localhost:9999/api/v1/employee
 
+
+
 📡 API Client
 
-Features:
-
+**Features:**
 RestTemplate
-
 Connection/read timeouts
-
 JSON parsing
-
 Downstream validation extraction
-
 Clean error propagation
 
 Example handling:
@@ -199,27 +199,24 @@ catch (HttpServerErrorException ex) {
 
 
 📈 Scalability & Resilience
+
 Implemented
 
-Local request validation
+1) Local request validation
+2) Downstream error translation
+3) RestTemplate timeouts
+4) Stateless service layer
+5) Clean separation of layers
 
-Downstream error translation
 
-RestTemplate timeouts
+ **Future Enhancements**
+1) Replace RestTemplate with WebClient
 
-Stateless service layer
+2) Add Resilience4j (CircuitBreaker, Retry)
 
-Clean separation of layers
+3) Add caching for frequent read endpoints
 
-Future Enhancements
-
-Replace RestTemplate with WebClient
-
-Add Resilience4j (CircuitBreaker, Retry)
-
-Add caching for frequent read endpoints
-
-Improve tracing & observability
+4) Improve tracing & observability
 
 
 
@@ -240,6 +237,9 @@ Mock Employee Server
 
 Yogendra Singh Bundela
 Employee API – Coding Challenge Solution
+
+
+
 
 ✅ Summary
 
